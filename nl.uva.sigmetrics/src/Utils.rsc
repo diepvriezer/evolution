@@ -4,7 +4,7 @@ import IO;
 import String;
 import util::Resources;
 
-// Returns a list of files with a specific extension for project resources and paths.
+// Returns a list of files with a specific extension for project resources and paths. Lookup sourceFilesForProject
 list[loc] findFiles(str ext, file(file)) = file.extension == ext ? [file] : [];
 list[loc] findFiles(str ext, folder(_, contents)) = findFiles(ext, contents);
 list[loc] findFiles(str ext, project(_, contents)) = findFiles(ext, contents);

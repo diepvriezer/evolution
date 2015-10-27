@@ -8,8 +8,12 @@ public class StringReplacer {
     public static String replace(String input, Pattern regex, StringReplacerCallback callback) {
         StringBuffer resultString = new StringBuffer();
         Matcher regexMatcher = regex.matcher(input);
+        try {
         while (regexMatcher.find()) {
             regexMatcher.appendReplacement(resultString, callback.replace(regexMatcher));
+        }} catch (IllegalArgumentException ex) {
+        	System.out.println(input);
+        	throw ex;
         }
         regexMatcher.appendTail(resultString);
 

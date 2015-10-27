@@ -30,11 +30,11 @@ public class RegexUtils {
 	// while still allowing comment characters in string constants. Testing done in Rascal.
 	public IValue stripComments(IString src) {
 		String result = StringReplacer.replace(src.getValue(), regex, (Matcher m) -> {
-			String val = m.group(0);
+			String val = m.group();
 			if (val.startsWith("/*") || val.startsWith("//"))
 				return val.startsWith("//") ? System.lineSeparator() : "";
 			
-		    return m.group(0);
+		    return val;
 		});
 		return values.string(result);
 	}
