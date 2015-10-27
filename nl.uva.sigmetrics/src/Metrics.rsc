@@ -15,10 +15,10 @@ alias Rank = str; // ++, +, o, -, --
 data SIG = sig(Rank volume, Rank complexity, Rank duplication, Rank size, Rank testing);
 
 
-// Count lines of code, uses two Java functions for Regex simplicity.
+// Count lines of code, uses two Java functions for Regex simplicity. Investigate library/util/LOC.rsc
 int countLoc(loc path) {
 	str stripped = stripComments(readFile(path));
-	return size([ line | line <- splitLines(stripped), trim(line) != "" ]);
+	return (0 | it + 1 | line <- splitLines(stripped), trim(line) != "");
 }
 int countLoc(list[loc] paths) = (0 | it + countLoc(p) | p <- paths);
 
@@ -34,7 +34,7 @@ Rank rankLoc(int n) {
 
 
 
-public value getMetrics(str id) {
+public M3 getMetrics(str id) {
 	loc proj = toLocation("project://" + id);
 	list[loc] files = findFiles("java", getProject(proj));
 	
@@ -44,11 +44,11 @@ public value getMetrics(str id) {
 	println("<lines> lines of code, <volume>");
 	
 	// Calculate m3 model.
-	model = createM3FromEclipseProject(proj);
+	M3 model = createM3FromEclipseProject(proj);
 	
 	return model;
 }
 
 
 // Sample wrappers.
-public value getExample() = getMetrics("tcpExample");
+public M3 getExample() = getMetrics("tcpExample");

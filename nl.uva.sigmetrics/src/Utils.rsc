@@ -14,7 +14,7 @@ list[loc] findFiles(str ext, loc path) = findFiles(ext, [ path + p | p <- listEn
 list[loc] findFiles(str ext, &T contents) = ([] | it + findFiles(ext, c) | c <- contents);
 
 
-// Comment stripper.
+// Comment stripper, easier than SystemAPI
 @javaClass{nl.uva.sigmetrics.helpers.RegexUtils}
 public java str stripComments(str s);
 private test bool t_strip1() = stripComments("int hi = 5; //random\r\n") == "int hi = 5; \r\n"; // single lines need a (CR)LF for it to work.
