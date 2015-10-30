@@ -5,8 +5,8 @@ import util::IO;
 
 import IO;
 import List;
-import lang::java::jdt::m3::Core;
-import lang::java::jdt::m3::AST;
+import lang::java::m3::AST;
+import lang::java::m3::Core;
 
 @doc { Computes the CC for a given (method) AST. }
 int cc(Declaration ast) {
@@ -25,20 +25,31 @@ int cc(Declaration ast) {
 }
 
 @doc { Calculates the cyclomatic complexity and unit complexity metrics. }
-public tuple[Rating, Rating] calculateUnitComplexity(M3 model, int lines) {
-	
+public tuple[Rating, Rating] calculateUnitComplexity(list[loc] files, int lines) {
+
 	// Map holding LOC and CC risk for each unit. 
 	map[loc, tuple[int, Risk]] unitMap = ();
 	map[Risk, num] ccMap = (0:0, 1:0, 2:0, 3:0);
 	map[Risk, num] locMap = (0:0, 1:0, 2:0, 3:0);
-	for (loc m <- methods(model)) {
-		ast = getMethodASTEclipse(m, model=model);
-		nLoc = size(splitLines(readFile(m)));
-		ccRisk = categorizeCc(cc(ast));
-		locRisk = categorizeUnitLoc(nLoc);
-		unitMap[m] = <nLoc, ccRisk>;
-		ccMap[ccRisk] += nLoc;
-		locMap[locRisk] += nLoc;
+	
+	for (loc f <- files) {
+		ast = createAstFromFile(f, false); // we don't need to collect types.
+		
+		visit(ast) {
+			case Declaration d: {
+				if (d is method) {
+					loc m = d@src;
+					
+					nLoc = size(splitLines(readFile(m)));
+					ccRisk = categorizeCc(cc(d));
+					locRisk = categorizeUnitLoc(nLoc);
+					
+					unitMap[m] = <nLoc, ccRisk>;
+					ccMap[ccRisk] += nLoc;
+					locMap[locRisk] += nLoc;
+				}
+			}
+		}
 	}
 	
 	// Genius reuse of resources.
