@@ -1,13 +1,13 @@
 module Program
 
-import List;
-
 import metrics::CloneDetection;
 import metrics::SIG;
 import metrics::UnitComplexity;
 import util::IO;
 
 import IO;
+import List;
+import Set;
 import util::Resources;
 import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
@@ -46,7 +46,8 @@ public void run(loc project) {
 	rClone = rankDuplication(dups.percentage);
 	
 	println("Code duplication: <dups.percentage> of <linesOfCode> lines");
-	
+	set[set[Line]] linesPerFile = group(dups.lines, similarFile);
+
 	// Metrics: Complexity & unit size.
 	println("Calculating cyclomatic complexity & unit size...");
 	<rComplex, rUnit> = calculateUnitComplexity(files, linesOfCode);
@@ -58,3 +59,5 @@ public void run(loc project) {
 	println("  Unit size:   <rUnit>");
 	println("  Duplication: <rClone>");
 }
+
+bool similarFile(Line a, Line b) = a.row == b.row;
