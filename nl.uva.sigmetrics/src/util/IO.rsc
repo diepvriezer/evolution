@@ -6,18 +6,12 @@ import util::Resources;
 
 data Line = line(str s, loc file, int row);
 
-@doc{ Returns a list of files with a specific extension for project resources and paths. }
-public list[loc] findFiles(str ext, file(file)) = file.extension == ext ? [file] : [];
-public list[loc] findFiles(str ext, folder(_, contents)) = findFiles(ext, contents);
-public list[loc] findFiles(str ext, project(_, contents)) = findFiles(ext, contents);
-public list[loc] findFiles(str ext, loc path) = [] when !exists(path);
-public list[loc] findFiles(str ext, loc path) = findFiles(ext, file(path)) when isFile(path);
-public list[loc] findFiles(str ext, loc path) = findFiles(ext, [ path + p | p <- listEntries(path)]) when isDirectory(path);
-public list[loc] findFiles(str ext, &T contents) = ([] | it + findFiles(ext, c) | c <- contents);
+@doc{ Keeps only Java files in a resource. }
 
 @doc{ Returns a list of stripped lines for a given file. Comment lines are replaced with blanks. } 
-public list[Line] getStrippedLines(loc path) {
-	s = stripComments(readFile(path));
+public list[Line] getStrippedLines(loc path, str src="") {
+	if (src == "") src = readFile(path);
+	s = stripComments(src);
 	lines = ([] | it + l | /^<l:.*>(\r?\n)?/m := s);
 	int i = 0;
 	return for (l <- lines) {
@@ -26,6 +20,9 @@ public list[Line] getStrippedLines(loc path) {
 		if (l != "") append(line(l, path, i));
 	}
 }
+
+@doc{ Because closing curlies count towards LOC but are useless for duplicate detection, we strip 'em. }
+public list[Line] stripClosingCurlies(list[Line] lines) = [ l | l <- lines, l.s != "}" ]; // already trimmed.
 
 @javaClass{nl.uva.sigmetrics.RegexUtils}
 public java str stripComments(str s);

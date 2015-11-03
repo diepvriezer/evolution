@@ -5,6 +5,7 @@ import util::IO;
 
 import IO;
 import List;
+import Set;
 import lang::java::m3::AST;
 import lang::java::m3::Core;
 
@@ -12,20 +13,23 @@ import lang::java::m3::Core;
 int cc(Declaration ast) {
 	int n = 1;
 	visit(ast) {
-		case \case(_) 		: n+=1;
-		case \catch(_,_)	: n+=1;
-		case \if(_,_)		: n+=1;
-		case \if(_,_,_)		: n+=1;
-		case \while(_,_)	: n+=1;
-		case \for(_,_,_)	: n+=1;
-		case \for(_,_,_,_)	: n+=1;
-		case \foreach(_,_,_): n+=1;
+		case \case(_) 				: n+=1;
+		case \catch(_,_)			: n+=1;
+		case \if(_,_)				: n+=1;
+		case \if(_,_,_)				: n+=1;
+		case \while(_,_)			: n+=1;
+		case \for(_,_,_)			: n+=1;
+		case \for(_,_,_,_)			: n+=1;
+		case \foreach(_,_,_)		: n+=1;
+		case \conditional(_,_,_)	: n+=1;
+		case \infix(_,"||",_)		: n+=1;
+		case \infix(_,"&&",_)		: n+=1;
 	}
 	return n;
 }
 
 @doc { Calculates the cyclomatic complexity and unit complexity metrics. }
-public tuple[Rating, Rating] calculateUnitComplexity(list[loc] files, int lines) {
+public tuple[Rating, Rating] calculateUnitComplexity(set[loc] files, int lines) {
 
 	// Map holding LOC and CC risk for each unit. 
 	map[loc, tuple[int, Risk]] unitMap = ();
@@ -51,7 +55,7 @@ public tuple[Rating, Rating] calculateUnitComplexity(list[loc] files, int lines)
 			}
 		}
 	}
-	
+		
 	// Genius reuse of resources.
 	ccMap = (risk : ccMap[risk]/lines | risk <- ccMap);
 	locMap = (risk : locMap[risk]/lines | risk <- locMap);

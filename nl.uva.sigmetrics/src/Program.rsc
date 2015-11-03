@@ -4,34 +4,40 @@ import metrics::CloneDetection;
 import metrics::SIG;
 import metrics::UnitComplexity;
 import util::IO;
+import vis::Playground;
 
 import IO;
 import List;
 import Set;
+import util::Math;
 import util::Resources;
 import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
+import lang::java::jdt::Project;
 
-public void run(loc project) {
+public void run(loc projectPath) {
 
 	println("SIG Maintainability Index Calculator");
 	println(" By Floris den Heijer & Jordy Heemskerk");
 	println();
 	
-	println("Target location: <project>\n");
-		
+	println("Target location: <projectPath>\n");
+	
+	// Project resource, which will be annotated with various ratings per file.
+	Resource proj = getProject(projectPath);
+	
 	// Final ratings.
 	Rating rLoc, rComplex, rUnit, rClone;
 	
-	// Compile a list of source files, accumulate stripped lines.
-	list[loc] files = findFiles("java", getProject(project));
+	// Compile a set of source files, accumulate stripped lines.
+	set[loc] files = sourceFilesForProject(projectPath);
 	int nFiles = size(files);
 	
 	println("Starting indexation of <nFiles> files...");
 	list[Line] lines = [];
 	for (f <- files) {
-		lines = lines + getStrippedLines(f);
+		lines += getStrippedLines(f);
 	}
 	
 	// Metric: Volume.
@@ -40,13 +46,16 @@ public void run(loc project) {
 	
 	println("Lines of code: <linesOfCode>");
 	
+	lines = stripClosingCurlies(lines);
+	
 	// Metric: Duplication.
 	println("Finding duplicates...");
-	dups = calcDuplicates(lines);
-	rClone = rankDuplication(dups.percentage);
+	set[Line] dups = findDuplicates(lines);
+	int pDups = round((size(dups) / (linesOfCode * 1.0)) * 100);
+	rClone = rankDuplication(pDups);
 	
-	println("Code duplication: <dups.percentage> of <linesOfCode> lines");
-	set[set[Line]] linesPerFile = group(dups.lines, similarFile);
+	println("Code duplication: <size(dups)> of <linesOfCode> lines (<pDups>%)");
+	set[set[Line]] linesPerFile = group(dups, similarFile);
 
 	// Metrics: Complexity & unit size.
 	println("Calculating cyclomatic complexity & unit size...");
@@ -60,4 +69,4 @@ public void run(loc project) {
 	println("  Duplication: <rClone>");
 }
 
-bool similarFile(Line a, Line b) = a.row == b.row;
+bool similarFile(Line a, Line b) = a.file == b.file;
