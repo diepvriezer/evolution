@@ -13,6 +13,7 @@ import util::Resources;
 import util::Charts;
 import util::Input;
 import vis::TreeMaps;
+import vis::Figure;
 
 bool verbose = false; // verbose
 

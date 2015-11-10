@@ -1,6 +1,7 @@
 module util::Input
 
 import Prelude;
+import util::Resources;
 
 data Line = line(str s, loc file, int row);
 
