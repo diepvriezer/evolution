@@ -1,12 +1,8 @@
-module util::IO
+module util::Input
 
-import IO;
-import String;
-import util::Resources;
+import Prelude;
 
 data Line = line(str s, loc file, int row);
-
-@doc{ Keeps only Java files in a resource. }
 
 @doc{ Returns a list of stripped lines for a given file. Comment lines are replaced with blanks. } 
 public list[Line] getStrippedLines(loc path, str src="") {

@@ -1,6 +1,5 @@
 module Prog
 
-
 import Prelude;
 import util::IO;
 import metrics::CloneDetection;
@@ -11,6 +10,8 @@ import lang::java::jdt::Project;
 import lang::java::m3::AST;
 import util::Math;
 import util::Resources;
+import util::Charts;
+import util::Input;
 import vis::TreeMaps;
 
 bool verbose = false; // verbose
@@ -21,14 +22,16 @@ void calcMetrics(loc projPath) {
 	println(" By Floris den Heijer & Jordy Heemskerk");
 	println();
 	
+	// Get files, could be simpler but we want treeeees.
 	Resource proj = getProject(projPath);
 	Resource javaFileTree = filterResourceTree(proj);
 	set[loc] files = ({} | it + l | /file(l) := javaFileTree);
 	println("Project: <projPath>, <size(files)> files\n");
 	
 	// Compute unit and file metrics for all source files.
-	println("Computing LOC, unit CC and unit LOC...");
+	println("Computing LOC, unit CC and unit LOC");
 	map[loc, FileInfo] info = ( f : processFile(f) | f <- files);
+	println();
 	
 	// Metric: Volume.
 	list[Line] lines = ([] | it + f.srcLines | f <- range(info));
@@ -39,29 +42,38 @@ void calcMetrics(loc projPath) {
 	println("Finding duplicate lines...");
 	set[Line] dupLines = findDuplicates(stripClosingCurlies(lines));
 	for (l <- dupLines) {
-		info[l.file]@dupLines += 1;
+		info[l.file].dupLines += 1;
 	}
 	
 	int totalLocDup = size(dupLines);
 	int dupPercentage = round((totalLocDup / (totalLoc * 1.0)) * 100);
 	println("Duplication: <totalLocDup> of <totalLoc> lines, <dupPercentage>%");
 	
-	// Calculate SIG and ISO metrics.
-	sRating = calcSig(totalLoc, range(info), dupPercentage);
+	// Compute risk maps, SIG and ISO metrics.
+	<ccMap, sizeMap, dupMap> = countUnitCcSizeDup(totalLoc, range(info));
+	
+	sRating = sig(rankLoc(totalLoc), rankRisk(ccMap), rankRisk(sizeMap), rankDuplication(dupPercentage));
 	iRating = sigToIso(sRating);
 	
 	printSig(sRating);
 	printIso(iRating);
-	
-	// Draw figures.
+
+	// Draw TreeMapLoc.
 	
 	annotatedResourceTree = annotateResourceTree(javaFileTree, info);
 	render(resourceTreeToTreeMap(annotatedResourceTree));
+
+	// Render figures and more detailed output.
+	println("\n----------------------------------\n");
+	plotPrintMap("Cyclomatic Complexity", sRating.complexity, ccMap);
+	plotPrintMap("Unit Size", sRating.unitSize, sizeMap);
+	plotPrintMap("Duplication", sRating.duplication, dupMap);
+
 }
 
 @doc{ Processes a file and returns it's stripped source lines and file info. } 
 FileInfo processFile(loc l) {
-	printlnv("Processing <l.file>...");
+	print(".");
 	src = readFile(l);
 	stripped = getStrippedLines(l, src=src);
 	ast = createAstFromString(l, src, false); // no bindings.
@@ -76,27 +88,35 @@ FileInfo processFile(loc l) {
 		}
 	}
 	
-	return fileInfo(stripped, size(stripped), units);
+	return fileInfo(stripped, size(stripped), 0, units);
 }
 
-@doc{ Helper which calculates the final SIG score. }
-SigRating calcSig(int totalLoc, set[FileInfo] infos, int dupPercentage) {
-	map[Risk, num] ccMap = (0:0, 1:0, 2:0, 3:0);
-	map[Risk, num] locMap = (0:0, 1:0, 2:0, 3:0);
-	for (i <- infos) {
-		for (u <- i.units) {
-			ccMap[u.ccRisk] += u.lines;
-			locMap[u.lineRisk] += u.lines;
-		}
-	}
-	
-	ccMap = (risk : ccMap[risk]/totalLoc | risk <- ccMap);
-	locMap = (risk : locMap[risk]/totalLoc | risk <- locMap);
-	
-	return sig(rankLoc(totalLoc), rankRisk(ccMap), rankRisk(locMap), rankDuplication(dupPercentage));
+@doc { Plot/print combinator. }
+void plotPrintMap(str title, Rating r, map[&T, num] m) {
+	displayTitle = "<title> (<r>)";
+	printRMap(displayTitle, m);
+	plotRMap(title, displayTitle, m);	
 }
 
-// (useless) print helpers.
-void printlnv() { if (verbose) println(); }
-void printlnv(str msg) { if (verbose) println(msg); }
-void printv(str msg) { if (verbose) print(msg); }
+private list[Color] plotColors = [ color(c) | c <- ["green", "mediumseagreen", "gold", "salmon", "crimson"]];
+
+@doc { Plots a rating map. }
+void plotRMap(str title, str displayTitle, map[Rating, num] m) {
+	y = axis("Percentage", max(range(m)));
+	s = [series("++", [m["++"]], col=plotColors[0]),
+	     series("+", [m["+"]], col=plotColors[1]),
+	     series("o", [m["o"]], col=plotColors[2]),
+	     series("-", [m["-"]], col=plotColors[3]),
+	     series("--", [m["--"]], col=plotColors[4])];
+	render(title, barChart(y,s,title=displayTitle));
+}
+
+@doc { Plots a risk map. }
+void plotRMap(str title, str displayTitle, map[Risk, num] m) {
+	y = axis("Percentage", max(range(m)));
+	s = [series("Low", [m[0]], col=plotColors[0]),
+	     series("Moderate", [m[1]], col=plotColors[2]),
+	     series("High", [m[2]], col=plotColors[3]),
+	     series("Very high", [m[3]], col=plotColors[4])];
+	render(title, barChart(y,s,title=displayTitle));
+}

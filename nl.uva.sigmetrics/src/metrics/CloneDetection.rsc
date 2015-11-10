@@ -1,11 +1,7 @@
 module metrics::CloneDetection
 
-import util::IO;
-
-import IO;
-import List;
-import Map;
-import String;
+import Prelude;
+import util::Input;
 import util::Math;
 
 data DuplicateResult = dupres(real percentage, int totalSize, set[Line] lines);
