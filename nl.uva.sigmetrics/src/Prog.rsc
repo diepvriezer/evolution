@@ -1,7 +1,7 @@
 module Prog
 
 import Prelude;
-import util::IO;
+import metrics::UnitTest;
 import metrics::CloneDetection;
 import metrics::SIG;
 import metrics::UnitComplexity;

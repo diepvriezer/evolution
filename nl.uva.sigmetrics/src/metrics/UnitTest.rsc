@@ -1,7 +1,7 @@
 module metrics::UnitTest
 
 
-import util::IO;
+import util::Input;
 
 import Prelude;
 
