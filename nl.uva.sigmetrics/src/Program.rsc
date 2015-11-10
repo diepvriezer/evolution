@@ -6,9 +6,7 @@ import metrics::UnitComplexity;
 import util::IO;
 import vis::Playground;
 
-import IO;
-import List;
-import Set;
+import Prelude;
 import util::Math;
 import util::Resources;
 import lang::java::m3::Core;

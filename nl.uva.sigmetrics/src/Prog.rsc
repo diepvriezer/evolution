@@ -1,20 +1,17 @@
 module Prog
 
+
+import Prelude;
 import util::IO;
 import metrics::CloneDetection;
 import metrics::SIG;
 import metrics::UnitComplexity;
-import vis::TreeMaps;
-
-import IO;
-import Set;
-import List;
-import Map;
-import String;
+import vis::Render;
 import lang::java::jdt::Project;
 import lang::java::m3::AST;
 import util::Math;
 import util::Resources;
+import vis::TreeMaps;
 
 bool verbose = false; // verbose
 
@@ -25,8 +22,8 @@ void calcMetrics(loc projPath) {
 	println();
 	
 	Resource proj = getProject(projPath);
-	set[loc] files = {};
-	for (/file(l) := proj, l.extension=="java") files += l;
+	Resource javaFileTree = filterResourceTree(proj);
+	set[loc] files = ({} | it + l | /file(l) := javaFileTree);
 	println("Project: <projPath>, <size(files)> files\n");
 	
 	// Compute unit and file metrics for all source files.
@@ -57,8 +54,9 @@ void calcMetrics(loc projPath) {
 	printIso(iRating);
 	
 	// Draw figures.
-	locRes = annoLoc(info, proj);
-	renderResource(locRes);
+	
+	annotatedResourceTree = annotateResourceTree(javaFileTree, info);
+	render(resourceTreeToTreeMap(annotatedResourceTree));
 }
 
 @doc{ Processes a file and returns it's stripped source lines and file info. } 

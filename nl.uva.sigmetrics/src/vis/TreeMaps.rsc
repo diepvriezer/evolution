@@ -5,50 +5,36 @@ import metrics::SIG;
 import IO;
 import vis::Figure;
 import vis::Render;
+import vis::KeySym;
 import util::Resources;
 import util::Math;
+import util::Editors;
 
-anno loc		Resource@src;
-anno str		Resource@txt;
-anno int		Resource@area;
+anno int Resource @ _loc;
 
-Figure toVis(f:file(l)) {
-	if (f@area > 0) {
-		return box(text("<l.file>, area <f@area>"), area(f@area), fillColor(arbColor()));
+Resource annotateResourceTree(Resource resourceTree, map[loc, FileInfo] info) {
+	return visit(resourceTree) {
+		case p:project(l, rs) => { p@_loc = (0 | it + r@_loc | r <- rs); }
+		case f:folder(l, rs) => { f@_loc = (0 | it + r@_loc | r <- rs); }
+		case f:file(l) => { f@_loc = info[l].lines; }
 	}
-	return size(area(0));
-}
-Figure toVis(d:folder(l, contents)) = toVis(contents, d@area, l);
-Figure toVis(p:project(l, contents)) = toVis(contents, p@area, l);
-Figure toVis(set[Resource] contents, int a, loc l) {
-	set[Resource] rem = { r | r <- contents, r@area != 0 };
-	if (a > 0 && rem != {} ) {
-		return box(vcat([
-				text("<l.path>, area <a>", vgap(10)),
-				treemap([ toVis(r) | r <- rem])
-			]), area(a), lineWidth(3), vgap(10));		
-	}
-	
-	return space(area(0)); 
 }
 
-void renderResource(Resource r) {
-	render(toVis(r));
+public list[Color] colorScale = colorSteps(color("Green"), color("Red"), 100);
+
+Figure resourceTreeToTreeMap(f:file(l), int tloc) = box(popup("\<<l.file>\>\n<f@_loc> loc"), area(f@_loc), colorGrade(toReal(f@_loc) / tloc), goToSource(l));
+Figure resourceTreeToTreeMap(f:folder(l,rs), int tloc) = box(vcat([text(l.file),treemap([resourceTreeToTreeMap(r, tloc) | r <- rs], area(f@_loc))]),area(f@_loc));
+Figure resourceTreeToTreeMap(p:project(l,rs)) = treemap([resourceTreeToTreeMap(r, p@_loc) | r <- rs], area(p@_loc));
+
+public FProperty popup(str S) {
+	 return mouseOver(box(text(S), fillColor("lightyellow"),
+	 grow(1.2),resizable(false)));
 }
 
-// Annotate lines of code.
-Resource annoLoc(map[loc, FileInfo] info, f:file(l)) {
-	f@area = l in info ? info[l].lines : 0;
-	return f;
+public FProperty colorGrade(real p) {
+	return fillColor(colorScale[round(nroot(p, 4) * 99)]);
 }
-Resource annoLoc(map[loc, FileInfo] info, d:folder(l,contents)) {
-	d.contents = annoLoc(info, contents);
-	d@area = (0 | it + r@area | r <- d.contents);
-	return d;
+
+public FProperty goToSource(loc l) {
+	return onMouseUp(bool (int butnr, map[KeyModifier,bool] modifiers) { edit(l,[]); return true;});
 }
-Resource annoLoc(map[loc, FileInfo] info, p:project(l,contents)) {
-	p.contents = annoLoc(info, contents);
-	p@area = (0 | it + r@area | r <- p.contents);
-	return p;
-}
-set[Resource] annoLoc(map[loc, FileInfo] info, set[Resource] rs) = { annoLoc(info, r) | r <- rs };
