@@ -12,24 +12,13 @@ anno loc		Resource@src;
 anno str		Resource@txt;
 anno int		Resource@area;
 
-Figure toVis(f:file(l)) {
-	if (f@area > 0) {
-		return box(text("<l.file>, area <f@area>"), area(f@area), fillColor(arbColor()));
-	}
-	return size(area(0));
-}
+Figure toVis(f:file(l)) = box(area(f@area), fillColor(arbColor()));
 Figure toVis(d:folder(l, contents)) = toVis(contents, d@area, l);
 Figure toVis(p:project(l, contents)) = toVis(contents, p@area, l);
 Figure toVis(set[Resource] contents, int a, loc l) {
-	set[Resource] rem = { r | r <- contents, r@area != 0 };
-	if (a > 0 && rem != {} ) {
-		return box(vcat([
-				text("<l.path>, area <a>", vgap(10)),
-				treemap([ toVis(r) | r <- rem])
-			]), area(a), lineWidth(3), vgap(10));		
-	}
-	
-	return space(area(0)); 
+	return box(vcat(
+		[ text(l.path), treemap([ toVis(r) | r <- contents]) ]
+	));
 }
 
 void renderResource(Resource r) {

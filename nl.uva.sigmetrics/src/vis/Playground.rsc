@@ -1,29 +1,59 @@
 module vis::Playground
-
-import vis::Figure;
-import vis::Render;
+import Set;
 import IO;
+import List;
+import util::Resources;
 
-data TreeFigure = item(loc path, int scale)
-				| container(list[TreeFigure])
-				| drawing(str caption, TreeFigure c);
-
-data DrawItem = item(str text, int scale)
-			  | itemSet(list[DrawItem] items);
-
-Figure visItem(item(t, s)) = box(text(t, fontSize(15)), area(s));
-Figure visItem(itemSet(items)) = treemap([ visItem(i) | i <- items], area(getScale(itemSet(items))));
-
-int getScale(item(_, s)) = s;
-int getScale(itemSet(items)) = (0 | it+getScale(i) | i <- items); 
-
-public void renderMap(TreeFigure f) {
-	
+Resource getPrj() {
+	return getProject(|project://hsqldb|);
+}
+Resource parseR(Resource r) {
+	switch(r) {
+		case project(l, c): {
+			return project(l, parseR(c));
+		}
+		case folder(l, c): {
+			return folder(l, parseR(c));
+		}
+		case file(l): {
+			if(l.extension=="java") {
+				return file(l);
+			}
+			return folder(l, {}); // because you cannot create a empty file, or pattern match on the location.
+		}
+	}
+}
+set[Resource] parseR(set[Resource] rs) {
+	R = for(r <- rs) {
+		p = parseR(r);
+		if(folder(_, {}) := p) {
+			continue;
+		}
+		append p;
+	}
+	return toSet(R);
 }
 
-void run() {
-	L = itemSet([item("a", 5), item("b", 3), item("c", 2), itemSet([item("d", 5), item("e", 1)])]);
-	fig = box(visItem(L), fillColor("red"));
-	println(fig);
-	render(fig);
+Resource removeNonJava(p:project(l, cs)) {
+	cs = removeNonjava(cs);
+	if (cs == {}) throw "empty proj";
+	return project(l, cs);
+}
+set[Resource] removeNonJava(f:folder(l, cs)) {
+	if (cs != {}) {
+		cs = removeNonjava(cs);
+	}
+	if (cs == {}) return {};
+	return {folder(l, cs)};
+}
+set[Resource] removeNonJava(f:file(l)) = l.extension == "java" ? {f} : {};
+set[Resource] removeNonjava(set[Resource] rs) = flatten({ removeNonJava(r) | r <- rs });
+set[Resource] flatten(set[set[Resource]] s) {
+	r = {};
+	for (ss <- s) {
+		for (sss <- ss) {
+			r += sss;
+		}
+	}
+	return r;
 }

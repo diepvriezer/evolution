@@ -1,13 +1,12 @@
 module metrics::SIG
 
-import util::IO;
-
 import IO;
+import util::Input;
 import util::Math;
 import util::Resources;
 
 alias Rating = str; // ++, +, o, -, --
-alias Risk = int; // 0, 1, 2, 3
+alias Risk = int; // 0 = lowest, 1, 2, 3 = highest
 
 data SigRating = sig(Rating volume, Rating complexity, Rating unitSize, Rating duplication);
 data IsoRating = iso(Rating analysability, Rating changeability, Rating testability);
@@ -33,10 +32,10 @@ Rating rankLoc(int n) {
 	not easily refactored or already minimal and should not result in a (-) rank
 	by default.
 }
-Rating rankRisk(map[Risk, num] locMap) {
-	moderate = round(locMap[1]);
-	high = round(locMap[2]);
-	veryHigh = round(locMap[3]);
+Rating rankRisk(map[Risk, num] riskMap) {
+	moderate = round(riskMap[1]);
+	high = round(riskMap[2]);
+	veryHigh = round(riskMap[3]);
 	
 	if (moderate <= 25 && high <= 0 && veryHigh <= 0) return "++";
 	if (moderate <= 30 && high <= 5 && veryHigh <= 0) return "+";
@@ -69,6 +68,24 @@ Risk categorizeUnitLoc(int n) {
 	return 3;
 }
 
+@doc { Categorize risk for unit CC and unit size. }
+tuple[map[Risk, num], map[Risk, num]] countUnitCcAndSize(int totalLoc, set[FileInfo] infos) {
+	map[Risk, num] ccMap = (0:0, 1:0, 2:0, 3:0);
+	map[Risk, num] locMap = (0:0, 1:0, 2:0, 3:0);
+	for (i <- infos) {
+		for (u <- i.units) {
+			ccMap[u.ccRisk] += u.lines;
+			locMap[u.lineRisk] += u.lines;
+		}
+	}
+	
+	ccMap = (risk : ccMap[risk]/totalLoc | risk <- ccMap);
+	locMap = (risk : locMap[risk]/totalLoc | risk <- locMap);
+	
+	return <ccMap, locMap>;
+}
+
+@doc { Does what it says. }
 IsoRating sigToIso(SigRating s) {
 	real v = rtoi(s.volume);
 	real cc = rtoi(s.complexity);
