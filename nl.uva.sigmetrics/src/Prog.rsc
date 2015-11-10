@@ -82,7 +82,7 @@ FileInfo processFile(loc l) {
 	list[Unit] units = [];
 	visit(ast) {
 		case Declaration d : method(_,name,_,_,_): {
-			unitLines = size(splitLines(readFile(d@src)));
+			unitLines = size(getStrippedLines(d@src));
 			unitCc = cc(d);
 			units += unit(name, unitLines, unitCc, categorizeUnitLoc(unitLines), categorizeCc(unitCc));
 		}

@@ -85,9 +85,9 @@ tuple[map[Risk, num], map[Risk, num], map[Rating, num]] countUnitCcSizeDup(int t
 			locMap[u.lineRisk] += u.lines;
 		}
 	}
-	
-	ccMap = (risk : ccMap[risk]/totalLoc | risk <- ccMap);
-	locMap = (risk : locMap[risk]/totalLoc | risk <- locMap);
+		
+	ccMap = normalize((risk : ccMap[risk]/totalLoc | risk <- ccMap));
+	locMap = normalize((risk : locMap[risk]/totalLoc | risk <- locMap));
 	rMap = (rating : rMap[rating]/size(infos) | rating <- rMap);
 		
 	return <ccMap, locMap, rMap>;
@@ -157,4 +157,10 @@ private Rating itor(real r) {
 	if (r == 2) return "o";
 	if (r == 3) return "+";
 	return "++";
+}
+
+// Normalization.
+private map[Risk, num] normalize(map[Risk, num] m) {
+	tot = (0 | it + m[r] | r <- m);
+	return (r : m[r]/tot | r <- m);
 }
